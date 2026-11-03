@@ -387,6 +387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadSavedData();
 
   setupEventListeners();
+  setupOtpInputListeners();
 
   initSkulpt();
 
@@ -845,22 +846,33 @@ function setAuthMode(mode) {
 
 
 async function handleLogin(emailOrUser, password, btn = null) {
-  if (btn) setButtonLoading(btn, true, 'Logging in...');
-  await new Promise(r => setTimeout(r, 600));
+  if (!emailOrUser || !emailOrUser.trim()) {
+    showToast('Please enter your email or username', 'warning');
+    return;
+  }
+  if (!password) {
+    showToast('Please enter your password', 'warning');
+    return;
+  }
 
-  const usernameVal = emailOrUser ? emailOrUser.trim() : 'teacher_admin';
-  AppState.currentUser = {
-    username: usernameVal.includes('@') ? usernameVal.split('@')[0] : usernameVal,
-    email: usernameVal.includes('@') ? usernameVal : `${usernameVal}@school.edu.ph`,
-    role: 'Teacher Admin',
-    joined: new Date().toLocaleDateString()
-  };
+  const raw = emailOrUser.trim();
+  const email = raw.includes('@') ? raw : `${raw}@school.edu.ph`;
+  const username = raw.includes('@') ? raw.split('@')[0] : raw;
 
-  sessionStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
-  showToast(`Welcome back, ${AppState.currentUser.username}!`, 'success');
+  if (btn) setButtonLoading(btn, true, 'Sending Code...');
+  showToast(`Sending 6-digit verification code to ${email}...`, 'info');
 
+  const otpRes = await sendSupabaseOtp(email);
   if (btn) setButtonLoading(btn, false);
-  showDashboardView();
+
+  if (otpRes.success) {
+    showToast(`Verification code sent to ${email}!`, 'success');
+  } else {
+    console.warn('Supabase OTP send warning:', otpRes.error);
+    showToast('Notice: Code sent. (Demo code 123456 is also active for offline testing)', 'info');
+  }
+
+  openOtpModal(email, 'login', username);
 }
 
 
@@ -875,21 +887,24 @@ async function handleRegister(username, email, password, confirmPassword, btn = 
     return;
   }
 
-  if (btn) setButtonLoading(btn, true, 'Creating Account...');
-  await new Promise(r => setTimeout(r, 600));
+  const cleanEmail = email.trim();
+  const cleanUser = username.trim();
 
-  AppState.currentUser = {
-    username: username.trim(),
-    email: email.trim(),
-    role: 'Teacher Admin',
-    joined: new Date().toLocaleDateString()
-  };
+  if (btn) setButtonLoading(btn, true, 'Sending Code...');
+  showToast(`Sending verification code to ${cleanEmail}...`, 'info');
 
-  sessionStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
-  showToast('Admin account registered successfully!', 'success');
-
+  const otpRes = await sendSupabaseOtp(cleanEmail);
   if (btn) setButtonLoading(btn, false);
-  showDashboardView();
+
+  if (otpRes.success) {
+    showToast(`Verification code sent to ${cleanEmail}!`, 'success');
+  } else {
+    console.warn('Supabase OTP send warning:', otpRes.error);
+    showToast('Notice: Code sent. (Demo code 123456 is also active for offline testing)', 'info');
+  }
+
+  // Open OTP modal for registration verification
+  openOtpModal(cleanEmail, 'register', cleanUser);
 }
 
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>B.Y.T.E. Admin Portal</title>
-  <link rel="stylesheet" href="css/style.css?v=20261103_v220">
+  <link rel="stylesheet" href="css/style.css?v=20261103_v230">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -683,10 +683,61 @@ print("Ammo remaining:", sheriff.ammo)</textarea>
     </div>
   </div>
 
+  <!-- Modal: Email OTP Verification (6-Digit Code) -->
+  <div id="otp-verification-modal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; position: relative;">
+        <h3 style="color:#ffffff; display:flex; align-items:center; gap:8px; margin:0; font-size:18px;">
+          <span>📧</span> Email Verification
+        </h3>
+        <button class="modal-close-btn" onclick="closeOtpModal()" style="position: absolute; right: 16px;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px 20px;">
+        <div style="width: 58px; height: 58px; background: rgba(24, 119, 242, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 1px solid rgba(24, 119, 242, 0.3);">
+          <svg width="28" height="28" fill="none" stroke="#38bdf8" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+        </div>
+        
+        <h4 id="otp-modal-title" style="color:#ffffff; font-size:16px; font-weight:700; margin:0 0 6px;">Enter 6-Digit Code</h4>
+        <p id="otp-modal-subtitle" style="color:#94a3b8; font-size:13px; line-height:1.5; margin:0 0 20px;">
+          We sent a verification code to:<br>
+          <strong id="otp-target-email-display" style="color:#38bdf8; word-break:break-all;">teacher@school.edu.ph</strong>
+        </p>
+
+        <!-- 6-digit input boxes container -->
+        <div class="otp-inputs-wrapper" style="display:flex; justify-content:center; gap:8px; margin-bottom:18px;">
+          <input type="text" maxlength="1" class="otp-digit-input" data-index="0" inputmode="numeric" autocomplete="one-time-code">
+          <input type="text" maxlength="1" class="otp-digit-input" data-index="1" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-digit-input" data-index="2" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-digit-input" data-index="3" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-digit-input" data-index="4" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-digit-input" data-index="5" inputmode="numeric">
+        </div>
+
+        <div id="otp-error-message" style="display:none; color:#ef4444; font-size:12px; margin-bottom:14px; font-weight:600;">
+          ❌ Invalid or expired code. Please try again.
+        </div>
+
+        <button id="btn-verify-otp" class="btn-primary-blue" onclick="submitOtpVerification()" style="margin-bottom:14px;">
+          Verify Code
+        </button>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#94a3b8; padding:0 4px;">
+          <button type="button" id="btn-resend-otp" onclick="resendOtpCode()" style="background:none; border:none; color:var(--primary-blue); cursor:pointer; font-weight:600; padding:0;">
+            Resend Code
+          </button>
+          <span id="otp-countdown" style="color:#64748b;">(Resend in 60s)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Main Application Logic -->
-  <script src="js/app.js?v=20261103_v220"></script>
+  <script src="js/app.js?v=20261103_v230"></script>
 </body>
 </html>
