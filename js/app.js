@@ -2368,14 +2368,11 @@ function setupOtpInputListeners() {
       if (e.target.value) {
         e.target.classList.add('filled');
         e.target.classList.remove('has-error');
-        // Move to next input
+        // Move cursor to next input box
         if (index < inputs.length - 1) {
           inputs[index + 1].focus();
-        } else {
-          // If all filled, auto-submit
-          const allFilled = Array.from(inputs).every(i => i.value.trim().length === 1);
-          if (allFilled) submitOtpVerification();
         }
+        // REQUIREMENT: DO NOT auto-verify! User reviews code and manually clicks Verify button.
       } else {
         e.target.classList.remove('filled');
       }
@@ -2384,6 +2381,8 @@ function setupOtpInputListeners() {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Backspace' && !e.target.value && index > 0) {
         inputs[index - 1].focus();
+      } else if (e.key === 'Enter') {
+        submitOtpVerification();
       }
     });
 
@@ -2402,7 +2401,7 @@ function setupOtpInputListeners() {
         if (digits.length < inputs.length) {
           inputs[digits.length].focus();
         } else {
-          submitOtpVerification();
+          inputs[inputs.length - 1].focus();
         }
       }
     });
