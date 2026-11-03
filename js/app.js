@@ -859,21 +859,24 @@ async function handleLogin(emailOrUser, password, btn = null) {
   const email = raw.includes('@') ? raw : `${raw}@school.edu.ph`;
   const username = raw.includes('@') ? raw.split('@')[0] : raw;
 
-  if (btn) setButtonLoading(btn, true, 'Sending Code...');
+  if (btn) setButtonLoading(btn, true, 'Logging in...');
   try {
-    showToast(`Sending 6-digit verification code to ${email}...`, 'info');
-    const otpRes = await sendSupabaseOtp(email);
-    if (otpRes.success) {
-      showToast(`Verification code sent to ${email}!`, 'success');
-    } else {
-      console.warn('Supabase OTP send warning:', otpRes.error);
-      showToast(`Notice: ${otpRes.error} (Demo code 123456 is active)`, 'info');
-    }
-    openOtpModal(email, 'login', username);
+    // Direct Login without OTP (OTP is strictly for new account registration verification)
+    await new Promise(r => setTimeout(r, 600));
+
+    AppState.currentUser = {
+      username: username,
+      email: email,
+      role: 'Teacher Admin',
+      joined: new Date().toLocaleDateString()
+    };
+
+    sessionStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
+    showToast(`Welcome back, ${AppState.currentUser.username}!`, 'success');
+    showDashboardView();
   } catch (err) {
     console.error('Login error:', err);
-    showToast('Notice: Demo mode active. Use code: 123456', 'info');
-    openOtpModal(email, 'login', username);
+    showToast('Login failed. Please try again.', 'error');
   } finally {
     if (btn) setButtonLoading(btn, false);
   }
@@ -2151,11 +2154,11 @@ function openOtpModal(email, type = 'login', username = '') {
 
   if (type === 'register') {
     if (title) title.textContent = 'Verify New Admin Account';
-    if (subtitle) subtitle.innerHTML = `We sent a 6-digit confirmation code to:<br><strong style="color:#38bdf8; word-break:break-all;">${escapeHTML(email)}</strong>`;
+    if (subtitle) subtitle.innerHTML = `We sent a 6-digit confirmation code to:<br><strong style="color:#1877f2; word-break:break-all;">${escapeHTML(email)}</strong>`;
     if (verifyBtn) verifyBtn.textContent = 'Verify & Complete Registration';
   } else {
     if (title) title.textContent = 'Admin Login Verification';
-    if (subtitle) subtitle.innerHTML = `We sent a 6-digit login code to:<br><strong style="color:#38bdf8; word-break:break-all;">${escapeHTML(email)}</strong>`;
+    if (subtitle) subtitle.innerHTML = `We sent a 6-digit login code to:<br><strong style="color:#1877f2; word-break:break-all;">${escapeHTML(email)}</strong>`;
     if (verifyBtn) verifyBtn.textContent = 'Verify & Enter Portal';
   }
 

@@ -1926,3 +1926,124 @@ button, input, select, textarea, a, .select-dropdown-btn, .btn-primary-blue, .bt
     font-size: 18px;
   }
 }
+
+
+/* ==========================================================
+   WHITE THEME FOR OTP VERIFICATION MODAL (MATCHES LOGIN/REGISTER)
+   ========================================================== */
+#otp-verification-modal .modal-card {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+#otp-verification-modal .modal-header {
+  border-bottom: 1px solid #f1f5f9 !important;
+  background: #ffffff !important;
+}
+
+#otp-verification-modal .modal-header h3 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+#otp-verification-modal .modal-close-btn {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  font-size: 20px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+#otp-verification-modal .modal-close-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+#otp-verification-modal .modal-body {
+  background: #ffffff !important;
+}
+
+#otp-verification-modal #otp-modal-title {
+  color: #0f172a !important;
+}
+
+#otp-verification-modal #otp-modal-subtitle {
+  color: #64748b !important;
+}
+
+#otp-verification-modal #otp-target-email-display {
+  color: #1877f2 !important;
+}
+
+#otp-verification-modal .otp-icon-bubble {
+  background: rgba(24, 119, 242, 0.08) !important;
+  border: 1px solid rgba(24, 119, 242, 0.2) !important;
+}
+
+#otp-verification-modal .otp-icon-bubble svg {
+  stroke: #1877f2 !important;
+}
+
+/* Light Mode 6-Digit OTP Inputs */
+#otp-verification-modal .otp-inputs-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+#otp-verification-modal .otp-digit-input {
+  width: 44px;
+  height: 52px;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  transition: all 0.2s ease;
+  caret-color: #1877f2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+#otp-verification-modal .otp-digit-input:focus {
+  background: #ffffff !important;
+  border-color: #1877f2 !important;
+  box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.2) !important;
+  transform: translateY(-2px);
+}
+
+#otp-verification-modal .otp-digit-input.filled {
+  border-color: #1877f2 !important;
+  background: rgba(24, 119, 242, 0.04) !important;
+  color: #1877f2 !important;
+}
+
+#otp-verification-modal .otp-digit-input.has-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  background: #fff5f5 !important;
+}
+
+#otp-verification-modal #btn-resend-otp {
+  color: #1877f2 !important;
+}
+
+#otp-verification-modal #btn-resend-otp:hover {
+  text-decoration: underline !important;
+}
+
+#otp-verification-modal #otp-countdown {
+  color: #94a3b8 !important;
+}
