@@ -860,19 +860,23 @@ async function handleLogin(emailOrUser, password, btn = null) {
   const username = raw.includes('@') ? raw.split('@')[0] : raw;
 
   if (btn) setButtonLoading(btn, true, 'Sending Code...');
-  showToast(`Sending 6-digit verification code to ${email}...`, 'info');
-
-  const otpRes = await sendSupabaseOtp(email);
-  if (btn) setButtonLoading(btn, false);
-
-  if (otpRes.success) {
-    showToast(`Verification code sent to ${email}!`, 'success');
-  } else {
-    console.warn('Supabase OTP send warning:', otpRes.error);
-    showToast('Notice: Code sent. (Demo code 123456 is also active for offline testing)', 'info');
+  try {
+    showToast(`Sending 6-digit verification code to ${email}...`, 'info');
+    const otpRes = await sendSupabaseOtp(email);
+    if (otpRes.success) {
+      showToast(`Verification code sent to ${email}!`, 'success');
+    } else {
+      console.warn('Supabase OTP send warning:', otpRes.error);
+      showToast(`Notice: ${otpRes.error} (Demo code 123456 is active)`, 'info');
+    }
+    openOtpModal(email, 'login', username);
+  } catch (err) {
+    console.error('Login error:', err);
+    showToast('Notice: Demo mode active. Use code: 123456', 'info');
+    openOtpModal(email, 'login', username);
+  } finally {
+    if (btn) setButtonLoading(btn, false);
   }
-
-  openOtpModal(email, 'login', username);
 }
 
 
@@ -891,20 +895,23 @@ async function handleRegister(username, email, password, confirmPassword, btn = 
   const cleanUser = username.trim();
 
   if (btn) setButtonLoading(btn, true, 'Sending Code...');
-  showToast(`Sending verification code to ${cleanEmail}...`, 'info');
-
-  const otpRes = await sendSupabaseOtp(cleanEmail);
-  if (btn) setButtonLoading(btn, false);
-
-  if (otpRes.success) {
-    showToast(`Verification code sent to ${cleanEmail}!`, 'success');
-  } else {
-    console.warn('Supabase OTP send warning:', otpRes.error);
-    showToast('Notice: Code sent. (Demo code 123456 is also active for offline testing)', 'info');
+  try {
+    showToast(`Sending verification code to ${cleanEmail}...`, 'info');
+    const otpRes = await sendSupabaseOtp(cleanEmail);
+    if (otpRes.success) {
+      showToast(`Verification code sent to ${cleanEmail}!`, 'success');
+    } else {
+      console.warn('Supabase OTP send warning:', otpRes.error);
+      showToast(`Notice: ${otpRes.error} (Demo code 123456 is active)`, 'info');
+    }
+    openOtpModal(cleanEmail, 'register', cleanUser);
+  } catch (err) {
+    console.error('Register error:', err);
+    showToast('Notice: Demo mode active. Use code: 123456', 'info');
+    openOtpModal(cleanEmail, 'register', cleanUser);
+  } finally {
+    if (btn) setButtonLoading(btn, false);
   }
-
-  // Open OTP modal for registration verification
-  openOtpModal(cleanEmail, 'register', cleanUser);
 }
 
 
@@ -2096,4 +2103,274 @@ async function submitBugReport() {
   const descField = document.getElementById('bug-desc');
   if (titleField) titleField.value = '';
   if (descField) descField.value = '';
+}
+
+
+// ==========================================================
+// 6-DIGIT EMAIL OTP VERIFICATION (SUPABASE AUTH OPTION 2)
+// ==========================================================
+let otpCountdownTimer = null;
+let otpCountdownSecs = 60;
+
+async function sendSupabaseOtp(email) {
+  try {
+    const res = await fetch(`${SUPABASE_CONFIG.url}/auth/v1/otp`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_CONFIG.key,
+        'Authorization': `Bearer ${SUPABASE_CONFIG.key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email,
+        create_user: true
+      })
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      return { success: false, error: errData.msg || errData.message || 'Email rate limit reached' };
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function openOtpModal(email, type = 'login', username = '') {
+  AppState.pendingOtp = { email, type, username };
+  
+  const modal = document.getElementById('otp-verification-modal');
+  const emailDisplay = document.getElementById('otp-target-email-display');
+  const title = document.getElementById('otp-modal-title');
+  const subtitle = document.getElementById('otp-modal-subtitle');
+  const verifyBtn = document.getElementById('btn-verify-otp');
+  const errorMsg = document.getElementById('otp-error-message');
+
+  if (emailDisplay) emailDisplay.textContent = email;
+  if (errorMsg) errorMsg.style.display = 'none';
+
+  if (type === 'register') {
+    if (title) title.textContent = 'Verify New Admin Account';
+    if (subtitle) subtitle.innerHTML = `We sent a 6-digit confirmation code to:<br><strong style="color:#38bdf8; word-break:break-all;">${escapeHTML(email)}</strong>`;
+    if (verifyBtn) verifyBtn.textContent = 'Verify & Complete Registration';
+  } else {
+    if (title) title.textContent = 'Admin Login Verification';
+    if (subtitle) subtitle.innerHTML = `We sent a 6-digit login code to:<br><strong style="color:#38bdf8; word-break:break-all;">${escapeHTML(email)}</strong>`;
+    if (verifyBtn) verifyBtn.textContent = 'Verify & Enter Portal';
+  }
+
+  // Clear inputs
+  const inputs = document.querySelectorAll('.otp-digit-input');
+  inputs.forEach(inp => {
+    inp.value = '';
+    inp.classList.remove('filled', 'has-error');
+  });
+
+  if (modal) modal.classList.remove('hidden');
+
+  // Start 60s countdown
+  startOtpCountdown();
+
+  // Focus first input
+  setTimeout(() => {
+    const first = document.querySelector('.otp-digit-input[data-index="0"]');
+    if (first) first.focus();
+  }, 100);
+}
+
+function closeOtpModal() {
+  const modal = document.getElementById('otp-verification-modal');
+  if (modal) modal.classList.add('hidden');
+  if (otpCountdownTimer) {
+    clearInterval(otpCountdownTimer);
+    otpCountdownTimer = null;
+  }
+}
+
+function startOtpCountdown() {
+  if (otpCountdownTimer) clearInterval(otpCountdownTimer);
+  otpCountdownSecs = 60;
+  const resendBtn = document.getElementById('btn-resend-otp');
+  const countdownSpan = document.getElementById('otp-countdown');
+  
+  if (resendBtn) {
+    resendBtn.disabled = true;
+    resendBtn.style.opacity = '0.5';
+    resendBtn.style.cursor = 'not-allowed';
+  }
+  if (countdownSpan) countdownSpan.textContent = `(Resend in ${otpCountdownSecs}s)`;
+
+  otpCountdownTimer = setInterval(() => {
+    otpCountdownSecs--;
+    if (otpCountdownSecs <= 0) {
+      clearInterval(otpCountdownTimer);
+      otpCountdownTimer = null;
+      if (resendBtn) {
+        resendBtn.disabled = false;
+        resendBtn.style.opacity = '1';
+        resendBtn.style.cursor = 'pointer';
+      }
+      if (countdownSpan) countdownSpan.textContent = '(Ready)';
+    } else {
+      if (countdownSpan) countdownSpan.textContent = `(Resend in ${otpCountdownSecs}s)`;
+    }
+  }, 1000);
+}
+
+async function resendOtpCode() {
+  if (!AppState.pendingOtp || !AppState.pendingOtp.email) return;
+  const resendBtn = document.getElementById('btn-resend-otp');
+  if (resendBtn) setButtonLoading(resendBtn, true, 'Sending...');
+  
+  const result = await sendSupabaseOtp(AppState.pendingOtp.email);
+  if (resendBtn) setButtonLoading(resendBtn, false);
+
+  if (result.success) {
+    showToast(`New verification code sent to ${AppState.pendingOtp.email}!`, 'success');
+    startOtpCountdown();
+  } else {
+    showToast(`Notice: ${result.error} (Demo code 123456 is active)`, 'info');
+  }
+}
+
+function setupOtpInputListeners() {
+  const inputs = document.querySelectorAll('.otp-digit-input');
+  inputs.forEach((input, index) => {
+    input.addEventListener('input', (e) => {
+      const val = e.target.value.replace(/[^0-9]/g, '');
+      e.target.value = val ? val.slice(-1) : '';
+      if (e.target.value) {
+        e.target.classList.add('filled');
+        e.target.classList.remove('has-error');
+        // Move to next input
+        if (index < inputs.length - 1) {
+          inputs[index + 1].focus();
+        } else {
+          // If all filled, auto-submit
+          const allFilled = Array.from(inputs).every(i => i.value.trim().length === 1);
+          if (allFilled) submitOtpVerification();
+        }
+      } else {
+        e.target.classList.remove('filled');
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !e.target.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+      if (pasteData) {
+        const digits = pasteData.slice(0, 6).split('');
+        digits.forEach((d, i) => {
+          if (inputs[i]) {
+            inputs[i].value = d;
+            inputs[i].classList.add('filled');
+            inputs[i].classList.remove('has-error');
+          }
+        });
+        if (digits.length < inputs.length) {
+          inputs[digits.length].focus();
+        } else {
+          submitOtpVerification();
+        }
+      }
+    });
+  });
+}
+
+async function submitOtpVerification() {
+  if (!AppState.pendingOtp) return;
+  const inputs = document.querySelectorAll('.otp-digit-input');
+  const code = Array.from(inputs).map(i => i.value.trim()).join('');
+  const errorMsg = document.getElementById('otp-error-message');
+  const verifyBtn = document.getElementById('btn-verify-otp');
+
+  if (code.length < 6) {
+    if (errorMsg) {
+      errorMsg.textContent = '⚠️ Please enter all 6 digits.';
+      errorMsg.style.display = 'block';
+    }
+    inputs.forEach(i => { if (!i.value) i.classList.add('has-error'); });
+    showToast('Please enter the full 6-digit code', 'warning');
+    return;
+  }
+
+  if (errorMsg) errorMsg.style.display = 'none';
+  if (verifyBtn) setButtonLoading(verifyBtn, true, 'Verifying...');
+
+  let isVerified = false;
+
+  // 1. Check Master Demo Fallback Code (123456 or 000000) for classroom / offline defense guarantee
+  if (code === '123456' || code === '000000') {
+    isVerified = true;
+  } else {
+    // 2. Verify with Supabase Auth API
+    try {
+      const verifyRes = await fetch(`${SUPABASE_CONFIG.url}/auth/v1/verify`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_CONFIG.key,
+          'Authorization': `Bearer ${SUPABASE_CONFIG.key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'email',
+          email: AppState.pendingOtp.email,
+          token: code
+        })
+      });
+      if (verifyRes.ok) {
+        isVerified = true;
+      }
+    } catch (err) {
+      console.warn('Supabase verification network check:', err);
+    }
+  }
+
+  if (verifyBtn) setButtonLoading(verifyBtn, false);
+
+  if (isVerified) {
+    const pending = AppState.pendingOtp;
+    closeOtpModal();
+
+    if (pending.type === 'register') {
+      // REQUIREMENT: Once registered & verified, DO NOT auto-login!
+      // Switch BACK TO LOGIN so they log in with their verified credentials!
+      showToast('🎉 Admin account verified successfully! Please log in with your credentials.', 'success');
+      
+      // Pre-fill email in login forms for convenience
+      const deskLoginEmail = document.getElementById('desk-login-email');
+      const phoneLoginEmail = document.getElementById('phone-login-email');
+      if (deskLoginEmail) deskLoginEmail.value = pending.email;
+      if (phoneLoginEmail) phoneLoginEmail.value = pending.email;
+
+      setAuthMode('login');
+      AppState.pendingOtp = null;
+    } else {
+      // Login verified: enter portal!
+      const usernameVal = pending.username || (pending.email.includes('@') ? pending.email.split('@')[0] : pending.email);
+      AppState.currentUser = {
+        username: usernameVal,
+        email: pending.email,
+        role: 'Teacher Admin',
+        joined: new Date().toLocaleDateString()
+      };
+      sessionStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
+      showToast(`Welcome back, ${AppState.currentUser.username}!`, 'success');
+      AppState.pendingOtp = null;
+      showDashboardView();
+    }
+  } else {
+    if (errorMsg) {
+      errorMsg.textContent = '❌ Invalid or expired verification code. Please check your email (or use demo code: 123456).';
+      errorMsg.style.display = 'block';
+    }
+    inputs.forEach(i => i.classList.add('has-error'));
+    showToast('Invalid verification code!', 'error');
+  }
 }
