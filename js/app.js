@@ -46,10 +46,12 @@ function saveRegisteredAdmin(newAdmin) {
   const userLower = (newAdmin.username || '').trim().toLowerCase();
   const cleanPass = String(newAdmin.password || '').trim();
   
-  const existingIdx = accounts.findIndex(a => 
-    (a.email && a.email.toLowerCase() === emailLower) || 
-    (a.username && a.username.toLowerCase() === userLower)
-  );
+  // 1. Match by exact email first
+  let existingIdx = accounts.findIndex(a => a.email && a.email.toLowerCase().trim() === emailLower);
+  // 2. If no email match, match by username if username is provided
+  if (existingIdx === -1 && userLower) {
+    existingIdx = accounts.findIndex(a => a.username && a.username.toLowerCase().trim() === userLower);
+  }
 
   const accountToSave = {
     username: newAdmin.username ? newAdmin.username.trim() : (emailLower.includes('@') ? emailLower.split('@')[0] : 'Admin'),
@@ -62,7 +64,7 @@ function saveRegisteredAdmin(newAdmin) {
   if (existingIdx >= 0) {
     accounts[existingIdx] = { ...accounts[existingIdx], ...accountToSave };
   } else {
-    accounts.push(accountToSave);
+    accounts.unshift(accountToSave); // Store at front so newly registered accounts are found immediately!
   }
   localStorage.setItem('byte_admin_accounts', JSON.stringify(accounts));
 }
@@ -940,17 +942,19 @@ async function handleLogin(emailOrUser, password, btn = null) {
     await new Promise(r => setTimeout(r, 600));
 
     const accounts = getRegisteredAdmins();
-    // Search account by email, username, or email prefix
-    const found = accounts.find(a => 
-      (a.email && a.email.toLowerCase() === raw) || 
-      (a.username && a.username.toLowerCase() === raw) ||
-      (raw.includes('@') && a.username && a.username.toLowerCase() === raw.split('@')[0])
-    );
+    
+    // 1. FIRST PRIORITY: Exact match on registered email (case-insensitive)
+    let found = accounts.find(a => a.email && a.email.toLowerCase().trim() === raw);
+    
+    // 2. SECOND PRIORITY: Exact match on username (case-insensitive)
+    if (!found) {
+      found = accounts.find(a => a.username && a.username.toLowerCase().trim() === raw);
+    }
 
     if (found) {
       const savedPass = String(found.password || '').trim();
       const enteredPass = inputPass.trim();
-      if (savedPass !== enteredPass) {
+      if (savedPass !== enteredPass && String(found.password) !== String(password)) {
         showToast('❌ Incorrect password! Please check your credentials.', 'error');
         if (dPass) dPass.classList.add('input-error');
         if (pPass) pPass.classList.add('input-error');
@@ -1039,11 +1043,11 @@ async function handleRegister(username, email, password, confirmPassword, btn = 
       console.warn('Supabase OTP send warning:', otpRes.error);
       showToast(`Verification code: ${generatedCode}`, 'info');
     }
-    openOtpModal(cleanEmail, 'register', cleanUser, password, generatedCode);
+    openOtpModal(cleanEmail, 'register', cleanUser, cleanPass, generatedCode);
   } catch (err) {
     console.error('Register error:', err);
     showToast(`Verification code: ${generatedCode}`, 'info');
-    openOtpModal(cleanEmail, 'register', cleanUser, password, generatedCode);
+    openOtpModal(cleanEmail, 'register', cleanUser, cleanPass, generatedCode);
   } finally {
     if (btn) setButtonLoading(btn, false);
   }
