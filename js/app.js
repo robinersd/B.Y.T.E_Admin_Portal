@@ -2637,17 +2637,17 @@ async function submitOtpVerification() {
 
 
 // ==========================================================
-// APK DOWNLOAD & SMART DEVICE QR CODE SYSTEM (v24)
+// APK DOWNLOAD & SMART DEVICE QR CODE SYSTEM (v25)
 // ==========================================================
 function handleApkDownload() {
   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 860;
   const apkUrl = 'downloads/BYTE_Game.apk';
 
   if (isMobile) {
-    showToast('🚀 Downloading B.Y.T.E. ver24.apk...', 'success');
+    showToast('🚀 Downloading B.Y.T.E. ver25.apk...', 'success');
     const a = document.createElement('a');
     a.href = apkUrl;
-    a.download = 'BYTE_Game_v24.apk';
+    a.download = 'BYTE_Game_v25.apk';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
