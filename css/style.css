@@ -898,6 +898,13 @@ textarea.code-textarea::-moz-selection {
   transform: scale(0.96);
 }
 
+.btn-copy-code.disabled-btn {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* VS Code Python Syntax Highlighting Tokens (Exact Match to Photo 4) */
 .py-comment {
   color: #6fb959 !important; /* Crisp, high-contrast, easily readable green for hashtag comments */

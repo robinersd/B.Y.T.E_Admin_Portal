@@ -230,31 +230,15 @@ const AppState = {
   
 
   currentQuestion: {
-
     id: null,
-
-    title: 'Decrementing Ammo Method',
-
+    title: 'New Coding Problem',
     level: 'Easy',
-
     year: '1st Year',
-
-    
-
-    code: `# Complete the method to decrease ammo by 1:
-
-def shoot(self):
-
-    self.ammo ____ 1`,
-
-    expectedOutput: '-=',
-
-    hint: "Use the compound operator '-=' followed by 1 to decrease self.ammo.",
-
+    code: '',
+    expectedOutput: '',
+    hint: '',
     created_at: new Date().toISOString(),
-
-    status: 'deployed'
-
+    status: 'draft'
   },
 
   
@@ -583,6 +567,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateEditorHighlight();
 
   updateLevelYearBtnLabel();
+  updateCopyButtonState();
 
   setThemeMode(AppState.currentTheme);
 
@@ -1174,6 +1159,7 @@ function handleLogout() {
   sessionStorage.removeItem('byte_admin_user');
   localStorage.removeItem('byte_admin_user');
   clearAllAuthInputs({ clearLogin: true, clearReg: true });
+  clearWorkspaceEditor();
   closeProfileModal();
   showToast('Logged out successfully', 'success');
   showAuthView();
@@ -1191,15 +1177,11 @@ function showAuthView() {
 
 
 function showDashboardView() {
-
   document.getElementById('auth-wrapper')?.classList.add('hidden');
-
   document.getElementById('dashboard-wrapper')?.classList.remove('hidden');
-
+  clearWorkspaceEditor();
   updateProfileUI();
-
   updateHistoryTable();
-
 }
 
 
@@ -1282,70 +1264,59 @@ function updateLineNumbers() {
 
 
 
-function resetForNewQuestion() {
+function updateCopyButtonState() {
+  const codeInput = document.getElementById('code-input');
+  const copyBtn = document.querySelector('.btn-copy-code');
+  if (!copyBtn) return;
+  const hasCode = codeInput && codeInput.value.trim().length > 0;
+  if (!hasCode) {
+    copyBtn.classList.add('disabled-btn');
+    copyBtn.title = 'Editor is empty. Write code first to copy.';
+  } else {
+    copyBtn.classList.remove('disabled-btn');
+    copyBtn.title = 'Copy entire code to clipboard';
+  }
+}
 
+function clearWorkspaceEditor() {
   AppState.currentQuestion = {
-
     id: null,
-
     title: 'New Coding Problem',
-
     level: 'Easy',
-
     year: '1st Year',
-
-    
-
-    code: '# Type your Python problem template here\n',
-
+    code: '',
     expectedOutput: '',
-
     hint: '',
-
     status: 'draft'
-
   };
 
-  
-
   const codeEl = document.getElementById('code-input');
-
   const expEl = document.getElementById('expected-output-input');
-
   const hintEl = document.getElementById('hint-input');
   const titleInput = document.getElementById('question-title-input');
   const instrInput = document.getElementById('question-instruction-input');
+  const termEl = document.getElementById('terminal-output');
+
+  if (codeEl) codeEl.value = '';
+  if (expEl) expEl.value = '';
+  if (hintEl) hintEl.value = '';
   if (titleInput) titleInput.value = '';
   if (instrInput) instrInput.value = '';
 
-  const termEl = document.getElementById('terminal-output');
-
-  
-
-  if (codeEl) codeEl.value = AppState.currentQuestion.code;
-
-  if (expEl) expEl.value = '';
-
-  if (hintEl) hintEl.value = '';
-
   if (termEl) {
-
     termEl.innerText = 'Output will appear here after clicking Run...';
-
     termEl.classList.remove('has-error');
-
   }
 
-  
-
   updateLineNumbers();
-
   updateEditorHighlight();
-
   updateLevelYearBtnLabel();
+  updateCopyButtonState();
+}
 
-  showToast('Editor reset for new problem creation', 'info');
-
+function resetForNewQuestion() {
+  clearWorkspaceEditor();
+  showToast('Editor cleared for new problem creation', 'info');
 }
 
 
@@ -1854,6 +1825,8 @@ function loadQuestionToEditor(id) {
 
   updateLevelYearBtnLabel();
 
+  updateCopyButtonState();
+
   closeProfileModal();
 
   showToast(`Loaded question: ${q.title}`, 'info');
@@ -2102,11 +2075,9 @@ function setupEventListeners() {
 
 
     codeInput.addEventListener('input', () => {
-
       updateLineNumbers();
-
       updateEditorHighlight();
-
+      updateCopyButtonState();
     });
 
     
@@ -2181,33 +2152,26 @@ function setupEventListeners() {
 // ==========================================================
 
 function copyEditorCode(btn) {
-
   const codeInput = document.getElementById('code-input');
-
   if (!codeInput) return;
+  const text = (codeInput.value || '').trim();
 
-  const text = codeInput.value;
-
-  
-
-  if (navigator.clipboard && window.isSecureContext) {
-
-    navigator.clipboard.writeText(text).then(() => {
-
-      onCopySuccess(btn);
-
-    }).catch(() => {
-
-      fallbackCopy(codeInput, btn);
-
-    });
-
-  } else {
-
-    fallbackCopy(codeInput, btn);
-
+  // Guard: Do NOT copy if editor is completely empty
+  if (!text) {
+    showToast('⚠️ No code to copy! Editor is currently empty.', 'warning');
+    updateCopyButtonState();
+    return;
   }
 
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(codeInput.value).then(() => {
+      onCopySuccess(btn);
+    }).catch(() => {
+      fallbackCopy(codeInput, btn);
+    });
+  } else {
+    fallbackCopy(codeInput, btn);
+  }
 }
 
 

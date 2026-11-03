@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>B.Y.T.E. Admin Portal</title>
-  <link rel="stylesheet" href="css/style.css?v=20261103_v320">
+  <link rel="stylesheet" href="css/style.css?v=20261103_v330">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -341,23 +341,7 @@
           </div>
           <div class="editor-code-container">
             <pre id="code-highlight" class="code-highlight" aria-hidden="true"><code id="code-highlight-content"></code></pre>
-            <textarea id="code-input" class="code-textarea" spellcheck="false" placeholder="# Write Python code here..."># ==========================================================
-# QUESTION: Decrementing Ammo Method
-# INSTRUCTION: Write the compound assignment operator to reduce ammo by 1.
-# ==========================================================
-
-class Cowboy:
-    def __init__(self, ammo):
-        self.ammo = ammo
-
-    def shoot(self):
-        # [PLAYER MUST COMPLETE THIS PART]
-        self.ammo -= 1
-
-# Verification test (para ma-test ni teacher ang output)
-sheriff = Cowboy(ammo=6)
-sheriff.shoot()
-print("Ammo remaining:", sheriff.ammo)</textarea>
+            <textarea id="code-input" class="code-textarea" spellcheck="false" placeholder="# Write Python code here..."></textarea>
           </div>
         </div>
 
@@ -392,7 +376,7 @@ print("Ammo remaining:", sheriff.ammo)</textarea>
             </div>
           </div>
           <div class="panel-body">
-            <textarea id="expected-output-input" class="panel-textarea" placeholder="Type the expected output...">self.ammo -= 1</textarea>
+            <textarea id="expected-output-input" class="panel-textarea" placeholder="Type the expected output..."></textarea>
           </div>
         </div>
 
@@ -409,7 +393,7 @@ print("Ammo remaining:", sheriff.ammo)</textarea>
             </div>
           </div>
           <div class="panel-body">
-            <textarea id="hint-input" class="panel-textarea" placeholder="Type a hint for the student...">Use the compound operator '-=' followed by 1 to decrease self.ammo.</textarea>
+            <textarea id="hint-input" class="panel-textarea" placeholder="Type a hint for the student..."></textarea>
           </div>
         </div>
 
@@ -748,6 +732,6 @@ print("Ammo remaining:", sheriff.ammo)</textarea>
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Main Application Logic -->
-  <script src="js/app.js?v=20261103_v320"></script>
+  <script src="js/app.js?v=20261103_v330"></script>
 </body>
 </html>
