@@ -1,0 +1,11 @@
+# Local runtime & tunnel files
+ONLINE_SERVER_URL.txt
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS metadata
+.DS_Store
+Thumbs.db
