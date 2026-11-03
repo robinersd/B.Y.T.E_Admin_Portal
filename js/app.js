@@ -1302,6 +1302,8 @@ function clearWorkspaceEditor() {
   if (hintEl) hintEl.value = '';
   if (titleInput) titleInput.value = '';
   if (instrInput) instrInput.value = '';
+  const modalTitle = document.getElementById('modal-title-input');
+  if (modalTitle) modalTitle.value = '';
 
   if (termEl) {
     termEl.innerText = 'Output will appear here after clicking Run...';
@@ -1342,10 +1344,9 @@ function openLevelYearModal() {
     
 
     if (lvl) lvl.value = AppState.currentQuestion.level || 'Easy';
-
     if (yr) yr.value = AppState.currentQuestion.year || '1st Year';
-
-    if (top) top.value = AppState.currentQuestion.topic || 'Fundamentals';
+    const titleEl = document.getElementById('modal-title-input');
+    if (titleEl) titleEl.value = (AppState.currentQuestion.title && AppState.currentQuestion.title !== 'New Coding Problem') ? AppState.currentQuestion.title : '';
 
     
 
@@ -1368,21 +1369,18 @@ function closeLevelYearModal() {
 
 
 function applyLevelYearSelection() {
-
   const levelSelect = document.getElementById('modal-level-select')?.value || 'Easy';
-
   const yearSelect = document.getElementById('modal-year-select')?.value || '1st Year';
+  const titleInput = document.getElementById('modal-title-input');
+  if (titleInput && titleInput.value.trim()) {
+    AppState.currentQuestion.title = titleInput.value.trim();
+  }
 
   AppState.currentQuestion.level = levelSelect;
-
   AppState.currentQuestion.year = yearSelect;
-
   updateLevelYearBtnLabel();
-
   closeLevelYearModal();
-
   showToast(`Updated to: ${levelSelect} • ${yearSelect}`, 'success');
-
 }
 
 
@@ -1457,34 +1455,29 @@ async function saveAndDeployQuestion() {
 
   
 
-  let title = AppState.currentQuestion.title || 'Coding Problem';
+  let title = (AppState.currentQuestion.title && AppState.currentQuestion.title !== 'New Coding Problem') ? AppState.currentQuestion.title : '';
 
   const titleMatch = code.match(/#\s*QUESTION:\s*(.+)/i);
 
   if (titleMatch && titleMatch[1]) {
-
     title = titleMatch[1].trim();
-
   }
 
-  
+  if (!title) {
+    title = 'Coding Problem';
+  }
 
   const currentUser = AppState.currentUser;
   const userEmail = (currentUser?.email || '').trim().toLowerCase();
   const username = (currentUser?.username || '').trim().toLowerCase();
   const authorTag = userEmail || username || 'admin';
 
-  let codeToSave = code;
-  if (!codeToSave.includes('# CREATOR:')) {
-    codeToSave = `# CREATOR: ${authorTag}\n` + codeToSave;
-  }
-
   const payload = {
     question: title,
     difficulty: AppState.currentQuestion.level,
     year: AppState.currentQuestion.year,
-    topic: authorTag,
-    code: codeToSave,
+    topic: 'Fundamentals',
+    code: code,
     expectedOutput: expected.trim(),
     hint: hint.trim(),
     status: 'deployed'

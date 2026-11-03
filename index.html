@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>B.Y.T.E. Admin Portal</title>
-  <link rel="stylesheet" href="css/style.css?v=20261103_v340">
+  <link rel="stylesheet" href="css/style.css?v=20261103_v350">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -513,6 +513,13 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
+          <label style="color:#ffffff;">Question Title (Optional)</label>
+          <div class="input-with-icon">
+            <input type="text" id="modal-title-input" placeholder="e.g. Bullets Counter, Saloon Math" style="width:100%; height:44px; background:var(--ide-bg-editor); color:var(--ide-text-main); border:1px solid var(--ide-border); border-radius:8px; padding:0 12px; font-size:13.5px;">
+          </div>
+        </div>
+
+        <div class="form-group">
           <label style="color:#ffffff;">Difficulty Level</label>
           <div class="input-with-icon">
             <select id="modal-level-select" style="width:100%; height:44px; background:var(--ide-bg-editor); color:var(--ide-text-main); border:1px solid var(--ide-border); border-radius:8px; padding:0 12px;">
@@ -767,6 +774,6 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Main Application Logic -->
-  <script src="js/app.js?v=20261103_v340"></script>
+  <script src="js/app.js?v=20261103_v350"></script>
 </body>
 </html>
