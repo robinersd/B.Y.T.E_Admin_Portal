@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: byte-admin-portal
+    runtime: static
+    branch: main
+    region: singapore
+    staticPublishPath: .
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
