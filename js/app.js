@@ -992,7 +992,11 @@ async function handleRegister(username, email, password, confirmPassword, btn = 
 
   if (btn) setButtonLoading(btn, true, 'Sending Code...');
   try {
-    showToast(`Sending 6-digit code to ${cleanEmail}...`, 'info');
+    showToast(`Sending 6-digit verification code to ${cleanEmail}...`, 'info');
+
+    // USER REQUIREMENT: 3-second loading delay on verification code generation
+    await new Promise(r => setTimeout(r, 3000));
+
     const otpRes = await sendSupabaseOtp(cleanEmail, generatedCode);
     if (otpRes.success) {
       showToast(`Verification code: ${generatedCode}`, 'success');
@@ -2347,16 +2351,21 @@ async function resendOtpCode() {
   if (!AppState.pendingOtp || !AppState.pendingOtp.email) return;
   const resendBtn = document.getElementById('btn-resend-otp');
   if (resendBtn) setButtonLoading(resendBtn, true, 'Sending...');
-  
-  const result = await sendSupabaseOtp(AppState.pendingOtp.email);
+
+  const newCode = String(Math.floor(100000 + Math.random() * 900000));
+  AppState.pendingOtp.code = newCode;
+
+  // 3-second loading delay on resend
+  await new Promise(r => setTimeout(r, 3000));
+
+  const result = await sendSupabaseOtp(AppState.pendingOtp.email, newCode);
   if (resendBtn) setButtonLoading(resendBtn, false);
 
-  if (result.success) {
-    showToast(`New verification code sent to ${AppState.pendingOtp.email}!`, 'success');
-    startOtpCountdown();
-  } else {
-    showToast(`Notice: ${result.error} (Demo code 123456 is active)`, 'info');
-  }
+  const displayCode = document.getElementById('otp-display-code');
+  if (displayCode) displayCode.textContent = newCode;
+
+  showToast(`New verification code: ${newCode}`, 'success');
+  startOtpCountdown();
 }
 
 function setupOtpInputListeners() {
@@ -2427,6 +2436,7 @@ async function submitOtpVerification() {
 
   if (errorMsg) errorMsg.style.display = 'none';
   if (verifyBtn) setButtonLoading(verifyBtn, true, 'Verifying...');
+  await new Promise(r => setTimeout(r, 1800));
 
   let isVerified = false;
 
