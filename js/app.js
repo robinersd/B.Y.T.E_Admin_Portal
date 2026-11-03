@@ -987,22 +987,24 @@ async function handleRegister(username, email, password, confirmPassword, btn = 
 
   const cleanEmail = email.trim();
   const cleanUser = username.trim();
+  // Generate random 6-digit verification code
+  const generatedCode = String(Math.floor(100000 + Math.random() * 900000));
 
   if (btn) setButtonLoading(btn, true, 'Sending Code...');
   try {
-    showToast(`Sending verification code to ${cleanEmail}...`, 'info');
-    const otpRes = await sendSupabaseOtp(cleanEmail);
+    showToast(`Sending 6-digit code to ${cleanEmail}...`, 'info');
+    const otpRes = await sendSupabaseOtp(cleanEmail, generatedCode);
     if (otpRes.success) {
-      showToast(`Verification code sent to ${cleanEmail}!`, 'success');
+      showToast(`Verification code: ${generatedCode}`, 'success');
     } else {
       console.warn('Supabase OTP send warning:', otpRes.error);
-      showToast(`Notice: ${otpRes.error} (Demo code 123456 is active)`, 'info');
+      showToast(`Verification code: ${generatedCode}`, 'info');
     }
-    openOtpModal(cleanEmail, 'register', cleanUser, password);
+    openOtpModal(cleanEmail, 'register', cleanUser, password, generatedCode);
   } catch (err) {
     console.error('Register error:', err);
-    showToast('Notice: Demo mode active. Use code: 123456', 'info');
-    openOtpModal(cleanEmail, 'register', cleanUser, password);
+    showToast(`Verification code: ${generatedCode}`, 'info');
+    openOtpModal(cleanEmail, 'register', cleanUser, password, generatedCode);
   } finally {
     if (btn) setButtonLoading(btn, false);
   }
@@ -2227,7 +2229,7 @@ async function submitBugReport() {
 let otpCountdownTimer = null;
 let otpCountdownSecs = 60;
 
-async function sendSupabaseOtp(email) {
+async function sendSupabaseOtp(email, code = '') {
   try {
     const res = await fetch(`${SUPABASE_CONFIG.url}/auth/v1/otp`, {
       method: 'POST',
@@ -2238,7 +2240,14 @@ async function sendSupabaseOtp(email) {
       },
       body: JSON.stringify({
         email: email,
-        create_user: true
+        create_user: true,
+        options: {
+          emailRedirectTo: 'https://robinersd.github.io/B.Y.T.E_Admin_Portal/'
+        },
+        data: {
+          code: code,
+          verification_code: code
+        }
       })
     });
     if (!res.ok) {
@@ -2251,8 +2260,8 @@ async function sendSupabaseOtp(email) {
   }
 }
 
-function openOtpModal(email, type = 'login', username = '', password = '') {
-  AppState.pendingOtp = { email, type, username, password };
+function openOtpModal(email, type = 'login', username = '', password = '', code = '123456') {
+  AppState.pendingOtp = { email, type, username, password, code };
   
   const modal = document.getElementById('otp-verification-modal');
   const emailDisplay = document.getElementById('otp-target-email-display');
@@ -2260,17 +2269,19 @@ function openOtpModal(email, type = 'login', username = '', password = '') {
   const subtitle = document.getElementById('otp-modal-subtitle');
   const verifyBtn = document.getElementById('btn-verify-otp');
   const errorMsg = document.getElementById('otp-error-message');
+  const displayCode = document.getElementById('otp-display-code');
 
   if (emailDisplay) emailDisplay.textContent = email;
   if (errorMsg) errorMsg.style.display = 'none';
+  if (displayCode) displayCode.textContent = code;
 
   if (type === 'register') {
     if (title) title.textContent = 'Verify New Admin Account';
-    if (subtitle) subtitle.innerHTML = `We sent a 6-digit confirmation code to:<br><strong style="color:#1877f2; word-break:break-all;">${escapeHTML(email)}</strong>`;
+    if (subtitle) subtitle.innerHTML = `Confirmation code sent to:<br><strong style="color:#1d4ed8 !important; font-weight:700; word-break:break-all;">${escapeHTML(email)}</strong>`;
     if (verifyBtn) verifyBtn.textContent = 'Verify & Complete Registration';
   } else {
     if (title) title.textContent = 'Admin Login Verification';
-    if (subtitle) subtitle.innerHTML = `We sent a 6-digit login code to:<br><strong style="color:#1877f2; word-break:break-all;">${escapeHTML(email)}</strong>`;
+    if (subtitle) subtitle.innerHTML = `Confirmation code sent to:<br><strong style="color:#1d4ed8 !important; font-weight:700; word-break:break-all;">${escapeHTML(email)}</strong>`;
     if (verifyBtn) verifyBtn.textContent = 'Verify & Enter Portal';
   }
 
@@ -2420,8 +2431,9 @@ async function submitOtpVerification() {
 
   let isVerified = false;
 
-  // 1. Check Master Demo Fallback Code (123456 or 000000) for classroom / offline defense guarantee
-  if (code === '123456' || code === '000000') {
+  // 1. Check generated session code or Master Demo Fallback Code (123456 or 000000)
+  const validCodes = [AppState.pendingOtp.code, '123456', '000000'].filter(Boolean);
+  if (validCodes.includes(code)) {
     isVerified = true;
   } else {
     // 2. Verify with Supabase Auth API
