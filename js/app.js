@@ -29,20 +29,40 @@ function getRegisteredAdmins() {
   ];
 }
 
+function clearRegistrationInputs() {
+  const ids = [
+    'desk-reg-user', 'desk-reg-email', 'desk-reg-pass', 'desk-reg-cpass',
+    'phone-reg-user', 'phone-reg-email', 'phone-reg-pass', 'phone-reg-cpass'
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
 function saveRegisteredAdmin(newAdmin) {
   const accounts = getRegisteredAdmins();
   const emailLower = (newAdmin.email || '').trim().toLowerCase();
   const userLower = (newAdmin.username || '').trim().toLowerCase();
+  const cleanPass = String(newAdmin.password || '').trim();
   
   const existingIdx = accounts.findIndex(a => 
     (a.email && a.email.toLowerCase() === emailLower) || 
     (a.username && a.username.toLowerCase() === userLower)
   );
 
+  const accountToSave = {
+    username: newAdmin.username ? newAdmin.username.trim() : (emailLower.includes('@') ? emailLower.split('@')[0] : 'Admin'),
+    email: emailLower,
+    password: cleanPass,
+    role: newAdmin.role || 'Teacher Admin',
+    verifiedAt: newAdmin.verifiedAt || new Date().toISOString()
+  };
+
   if (existingIdx >= 0) {
-    accounts[existingIdx] = { ...accounts[existingIdx], ...newAdmin };
+    accounts[existingIdx] = { ...accounts[existingIdx], ...accountToSave };
   } else {
-    accounts.push(newAdmin);
+    accounts.push(accountToSave);
   }
   localStorage.setItem('byte_admin_accounts', JSON.stringify(accounts));
 }
@@ -928,7 +948,9 @@ async function handleLogin(emailOrUser, password, btn = null) {
     );
 
     if (found) {
-      if (found.password !== inputPass) {
+      const savedPass = String(found.password || '').trim();
+      const enteredPass = inputPass.trim();
+      if (savedPass !== enteredPass) {
         showToast('❌ Incorrect password! Please check your credentials.', 'error');
         if (dPass) dPass.classList.add('input-error');
         if (pPass) pPass.classList.add('input-error');
@@ -987,6 +1009,19 @@ async function handleRegister(username, email, password, confirmPassword, btn = 
 
   const cleanEmail = email.trim();
   const cleanUser = username.trim();
+  const cleanPass = password.trim();
+
+  // PROACTIVELY PERSIST ACCOUNT:
+  // Saves the account immediately so it is permanently preserved in the system
+  // even if it is a clone/dummy email (e.g. admin@alagatrack.com) or if the modal is cancelled!
+  saveRegisteredAdmin({
+    username: cleanUser,
+    email: cleanEmail,
+    password: cleanPass,
+    role: 'Teacher Admin',
+    verifiedAt: new Date().toISOString()
+  });
+
   // Generate random 6-digit verification code
   const generatedCode = String(Math.floor(100000 + Math.random() * 900000));
 
@@ -1020,6 +1055,7 @@ function handleLogout() {
   AppState.currentUser = null;
   sessionStorage.removeItem('byte_admin_user');
   localStorage.removeItem('byte_admin_user');
+  clearRegistrationInputs();
   showToast('Logged out successfully', 'success');
   showAuthView();
 }
@@ -2484,7 +2520,10 @@ async function submitOtpVerification() {
         verifiedAt: new Date().toISOString()
       });
 
-      // 2. REQUIREMENT: Once registered & verified, DO NOT auto-login!
+      // 2. Reset registration forms so previous inputs are wiped clean
+      clearRegistrationInputs();
+
+      // 3. REQUIREMENT: Once registered & verified, DO NOT auto-login!
       // Switch BACK TO LOGIN so they log in with their verified credentials!
       showToast('🎉 Admin account verified successfully! Please log in with your credentials.', 'success');
       
