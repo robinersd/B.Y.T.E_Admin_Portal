@@ -413,75 +413,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 function loadSavedData() {
-
-  const savedUser = localStorage.getItem('byte_admin_user');
-
-  if (savedUser) {
-
+  // Session check: Always require login on new visits / fresh browser sessions
+  const sessionUser = sessionStorage.getItem('byte_admin_user');
+  if (sessionUser) {
     try { 
-
-      AppState.currentUser = JSON.parse(savedUser); 
-
+      AppState.currentUser = JSON.parse(sessionUser); 
     } catch(e) {
-
       AppState.currentUser = null;
-
     }
-
   } else {
-
-    // Default logged in as Teacher Admin for smooth immediate use
-
-    AppState.currentUser = {
-
-      username: 'teacher_admin',
-
-      email: 'teacher@school.edu.ph',
-
-      role: 'Teacher Admin',
-
-      joined: new Date().toLocaleDateString()
-
-    };
-
-    localStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
-
+    AppState.currentUser = null;
   }
-
-  
+  // Clear any legacy auto-login user from localStorage so it never skips the login screen
+  localStorage.removeItem('byte_admin_user');
 
   checkAndLoadStreak();
 
-
-
   const savedQuestions = localStorage.getItem('byte_admin_questions');
-
   if (savedQuestions) {
-
     try {
-
       AppState.questionsList = JSON.parse(savedQuestions);
-
     } catch(e) {
-
       AppState.questionsList = [];
-
     }
-
   }
-
-  
 
   if (AppState.currentUser) {
-
     showDashboardView();
-
   } else {
-
     showAuthView();
-
   }
-
 }
 
 
@@ -765,85 +726,66 @@ function initSkulpt() {
 
 
 function runPythonCode() {
-
   const runBtn = document.querySelector('.run-code-btn') || document.querySelector('.btn-run-code');
-
   const codeInput = document.getElementById('code-input');
-
   const term = document.getElementById('terminal-output');
-
   if (!codeInput || !term) return;
-
-  
 
   const code = codeInput.value;
 
-  term.innerText = 'Executing Python code...';
-
-  term.classList.remove('has-error');
-
-
-
-  if (typeof Sk === 'undefined') {
-
-    term.innerText = '[Skulpt Python engine not loaded]';
-
+  // Validation 1: If editor is completely empty or only whitespace
+  if (!code || !code.trim()) {
+    term.innerText = '⚠️ No Python code entered! Please write some code in the editor before running.';
+    term.classList.add('has-error');
+    showToast('Please enter some Python code before running!', 'warning');
     return;
-
   }
 
+  // Validation 2: If editor contains only comments and blank lines
+  const nonCommentLines = code.split('\n').filter(line => line.trim() && !line.trim().startsWith('#'));
+  if (nonCommentLines.length === 0) {
+    term.innerText = '⚠️ Editor contains only comments! Please write executable Python code.';
+    term.classList.add('has-error');
+    showToast('No executable code found in editor! Please write code before running.', 'warning');
+    return;
+  }
 
+  term.innerText = 'Executing Python code...';
+  term.classList.remove('has-error');
+
+  if (typeof Sk === 'undefined') {
+    term.innerText = '[Skulpt Python engine not loaded]';
+    return;
+  }
 
   setButtonLoading(runBtn, true, 'Running...');
 
-
-
   try {
-
     Sk.misceval.asyncToPromise(function() {
-
       return Sk.importMainWithBody("<stdin>", false, code, true);
-
     }).then(
-
       function() {
-
         setButtonLoading(runBtn, false);
-
         if (!term.innerText || term.innerText === 'Executing Python code...') {
-
-          term.innerText = '[Code finished with no output. Use print() to display output]';
-
+          term.innerText = '[Code finished with no output. Use print() to display output in terminal]';
+          showToast('Code executed with no output. Add print() to see results.', 'info');
+        } else {
+          showToast('Code executed successfully!', 'success');
         }
-
-        showToast('Code executed successfully!', 'success');
-
       },
-
       function(err) {
-
         setButtonLoading(runBtn, false);
-
         term.innerText = err.toString();
-
         term.classList.add('has-error');
-
         showToast('Python Syntax/Runtime Error', 'error');
-
       }
-
     );
-
   } catch (e) {
-
     setButtonLoading(runBtn, false);
-
     term.innerText = e.toString();
-
     term.classList.add('has-error');
-
+    showToast('Execution error', 'error');
   }
-
 }
 
 
@@ -903,117 +845,70 @@ function setAuthMode(mode) {
 
 
 async function handleLogin(emailOrUser, password, btn = null) {
-
   if (btn) setButtonLoading(btn, true, 'Logging in...');
-
   await new Promise(r => setTimeout(r, 600));
 
-
-
   const usernameVal = emailOrUser ? emailOrUser.trim() : 'teacher_admin';
-
   AppState.currentUser = {
-
     username: usernameVal.includes('@') ? usernameVal.split('@')[0] : usernameVal,
-
     email: usernameVal.includes('@') ? usernameVal : `${usernameVal}@school.edu.ph`,
-
     role: 'Teacher Admin',
-
     joined: new Date().toLocaleDateString()
-
   };
 
-  
-
-  localStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
-
+  sessionStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
   showToast(`Welcome back, ${AppState.currentUser.username}!`, 'success');
 
-  
-
   if (btn) setButtonLoading(btn, false);
-
   showDashboardView();
-
 }
 
 
 
 async function handleRegister(username, email, password, confirmPassword, btn = null) {
-
   if (!username || !email || !password) {
-
     showToast('Please fill out all registration fields', 'error');
-
     return;
-
   }
-
   if (password !== confirmPassword) {
-
     showToast('Passwords do not match', 'error');
-
     return;
-
   }
 
-  
-
-  if (btn) setButtonLoading(btn, true, 'Registering...');
-
-  await new Promise(r => setTimeout(r, 700));
-
-
+  if (btn) setButtonLoading(btn, true, 'Creating Account...');
+  await new Promise(r => setTimeout(r, 600));
 
   AppState.currentUser = {
-
     username: username.trim(),
-
     email: email.trim(),
-
     role: 'Teacher Admin',
-
     joined: new Date().toLocaleDateString()
-
   };
 
-  
-
-  localStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
-
-  showToast('Account registered successfully as Admin!', 'success');
-
-  
+  sessionStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
+  showToast('Admin account registered successfully!', 'success');
 
   if (btn) setButtonLoading(btn, false);
-
   showDashboardView();
-
 }
 
 
 
 function handleLogout() {
-
   AppState.currentUser = null;
-
+  sessionStorage.removeItem('byte_admin_user');
   localStorage.removeItem('byte_admin_user');
-
   showToast('Logged out successfully', 'success');
-
   showAuthView();
-
 }
 
 
 
 function showAuthView() {
-
   document.getElementById('auth-wrapper')?.classList.remove('hidden');
-
   document.getElementById('dashboard-wrapper')?.classList.add('hidden');
-
+  setAuthMode('login');
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 

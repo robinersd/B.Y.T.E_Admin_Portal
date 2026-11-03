@@ -1877,3 +1877,10 @@ button, input, select, textarea, a, .select-dropdown-btn, .btn-primary-blue, .bt
 #bug-report-modal .input-with-icon .input-icon {
   color: #94a3b8 !important;
 }
+
+.toast.warning {
+  border-left-color: var(--ide-warning-yellow, #f59e0b) !important;
+}
+.toast.info {
+  border-left-color: var(--ide-accent-cyan, #38bdf8) !important;
+}
