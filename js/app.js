@@ -1,3 +1,52 @@
+
+// ==========================================================
+// REGISTERED ADMIN ACCOUNTS STORAGE & AUTHENTICATION
+// ==========================================================
+function getRegisteredAdmins() {
+  try {
+    const raw = localStorage.getItem('byte_admin_accounts');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Error reading byte_admin_accounts:', e);
+  }
+  // Default system admin accounts so existing school demo logins work
+  return [
+    {
+      username: 'teacher',
+      email: 'teacher@school.edu.ph',
+      password: 'password123',
+      role: 'Teacher Admin'
+    },
+    {
+      username: 'admin',
+      email: 'admin@school.edu.ph',
+      password: 'password123',
+      role: 'Teacher Admin'
+    }
+  ];
+}
+
+function saveRegisteredAdmin(newAdmin) {
+  const accounts = getRegisteredAdmins();
+  const emailLower = (newAdmin.email || '').trim().toLowerCase();
+  const userLower = (newAdmin.username || '').trim().toLowerCase();
+  
+  const existingIdx = accounts.findIndex(a => 
+    (a.email && a.email.toLowerCase() === emailLower) || 
+    (a.username && a.username.toLowerCase() === userLower)
+  );
+
+  if (existingIdx >= 0) {
+    accounts[existingIdx] = { ...accounts[existingIdx], ...newAdmin };
+  } else {
+    accounts.push(newAdmin);
+  }
+  localStorage.setItem('byte_admin_accounts', JSON.stringify(accounts));
+}
+
 /**
 
  * B.Y.T.E. Admin Portal - Interactive IDE & Question Creator
@@ -846,30 +895,72 @@ function setAuthMode(mode) {
 
 
 async function handleLogin(emailOrUser, password, btn = null) {
+  // Clear any previous error styling
+  const dPass = document.getElementById('desk-login-pass');
+  const pPass = document.getElementById('phone-login-pass');
+  if (dPass) dPass.classList.remove('input-error');
+  if (pPass) pPass.classList.remove('input-error');
+
   if (!emailOrUser || !emailOrUser.trim()) {
     showToast('Please enter your email or username', 'warning');
     return;
   }
   if (!password) {
     showToast('Please enter your password', 'warning');
+    if (dPass) dPass.classList.add('input-error');
+    if (pPass) pPass.classList.add('input-error');
     return;
   }
 
-  const raw = emailOrUser.trim();
-  const email = raw.includes('@') ? raw : `${raw}@school.edu.ph`;
-  const username = raw.includes('@') ? raw.split('@')[0] : raw;
+  const raw = emailOrUser.trim().toLowerCase();
+  const inputPass = String(password);
 
   if (btn) setButtonLoading(btn, true, 'Logging in...');
   try {
-    // Direct Login without OTP (OTP is strictly for new account registration verification)
     await new Promise(r => setTimeout(r, 600));
 
-    AppState.currentUser = {
-      username: username,
-      email: email,
-      role: 'Teacher Admin',
-      joined: new Date().toLocaleDateString()
-    };
+    const accounts = getRegisteredAdmins();
+    // Search account by email, username, or email prefix
+    const found = accounts.find(a => 
+      (a.email && a.email.toLowerCase() === raw) || 
+      (a.username && a.username.toLowerCase() === raw) ||
+      (raw.includes('@') && a.username && a.username.toLowerCase() === raw.split('@')[0])
+    );
+
+    if (found) {
+      if (found.password !== inputPass) {
+        showToast('❌ Incorrect password! Please check your credentials.', 'error');
+        if (dPass) dPass.classList.add('input-error');
+        if (pPass) pPass.classList.add('input-error');
+        return;
+      }
+
+      AppState.currentUser = {
+        username: found.username,
+        email: found.email,
+        role: found.role || 'Teacher Admin',
+        joined: found.verifiedAt ? new Date(found.verifiedAt).toLocaleDateString() : new Date().toLocaleDateString()
+      };
+    } else {
+      // Check default fallback accounts
+      if (raw === 'teacher@school.edu.ph' || raw === 'teacher' || raw === 'admin@school.edu.ph' || raw === 'admin') {
+        if (inputPass !== 'password123') {
+          showToast('❌ Incorrect password! Please check your credentials.', 'error');
+          if (dPass) dPass.classList.add('input-error');
+          if (pPass) pPass.classList.add('input-error');
+          return;
+        }
+        AppState.currentUser = {
+          username: raw.includes('@') ? raw.split('@')[0] : raw,
+          email: raw.includes('@') ? raw : `${raw}@school.edu.ph`,
+          role: 'Teacher Admin',
+          joined: new Date().toLocaleDateString()
+        };
+      } else {
+        showToast('❌ Account not found! Please register first or verify your email.', 'error');
+        return;
+      }
+    }
 
     sessionStorage.setItem('byte_admin_user', JSON.stringify(AppState.currentUser));
     showToast(`Welcome back, ${AppState.currentUser.username}!`, 'success');
@@ -907,11 +998,11 @@ async function handleRegister(username, email, password, confirmPassword, btn = 
       console.warn('Supabase OTP send warning:', otpRes.error);
       showToast(`Notice: ${otpRes.error} (Demo code 123456 is active)`, 'info');
     }
-    openOtpModal(cleanEmail, 'register', cleanUser);
+    openOtpModal(cleanEmail, 'register', cleanUser, password);
   } catch (err) {
     console.error('Register error:', err);
     showToast('Notice: Demo mode active. Use code: 123456', 'info');
-    openOtpModal(cleanEmail, 'register', cleanUser);
+    openOtpModal(cleanEmail, 'register', cleanUser, password);
   } finally {
     if (btn) setButtonLoading(btn, false);
   }
@@ -1701,51 +1792,72 @@ function downloadQuestionsJson() {
 
 
 function openForgotPasswordModal() {
-
   const modal = document.getElementById('forgot-password-modal');
-
+  const forgotInput = document.getElementById('forgot-email');
+  const deskEmail = document.getElementById('desk-login-email');
+  const phoneEmail = document.getElementById('phone-login-email');
+  const currentVal = (deskEmail && deskEmail.value) ? deskEmail.value.trim() : ((phoneEmail && phoneEmail.value) ? phoneEmail.value.trim() : '');
+  
+  if (forgotInput) {
+    if (currentVal && currentVal.includes('@')) {
+      forgotInput.value = currentVal;
+    } else {
+      forgotInput.value = '';
+    }
+  }
   if (modal) modal.classList.remove('hidden');
-
 }
-
-
 
 function closeForgotPasswordModal() {
-
   const modal = document.getElementById('forgot-password-modal');
-
   if (modal) modal.classList.add('hidden');
-
 }
 
+async function handleForgotPasswordSubmit(btn = null) {
+  const input = document.getElementById('forgot-email');
+  const email = input ? input.value.trim() : '';
 
-
-async function sendPasswordResetEmail(btn = null) {
-
-  const emailInput = document.getElementById('forgot-email-input');
-
-  const email = emailInput ? emailInput.value.trim() : '';
-
-  if (!email) {
-
-    showToast('Please enter your email address', 'error');
-
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid admin email address', 'warning');
     return;
-
   }
 
   if (btn) setButtonLoading(btn, true, 'Sending...');
+  try {
+    const accounts = getRegisteredAdmins();
+    const found = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
 
-  await new Promise(r => setTimeout(r, 700));
+    try {
+      await fetch(`${SUPABASE_CONFIG.url}/auth/v1/recover`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_CONFIG.key,
+          'Authorization': `Bearer ${SUPABASE_CONFIG.key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: email })
+      });
+    } catch (e) {
+      console.warn('Supabase recover call:', e);
+    }
 
-  if (btn) setButtonLoading(btn, false);
-
-  closeForgotPasswordModal();
-
-  showToast(`Password reset link sent to ${email}!`, 'success');
-
+    await new Promise(r => setTimeout(r, 600));
+    closeForgotPasswordModal();
+    if (found) {
+      showToast(`Password recovery sent to ${email}! (Your password: ${found.password})`, 'success');
+    } else {
+      showToast(`Password recovery instructions sent to ${email}!`, 'success');
+    }
+  } catch (err) {
+    console.error('Recovery error:', err);
+    showToast('Failed to send recovery instructions.', 'error');
+  } finally {
+    if (btn) setButtonLoading(btn, false);
+  }
 }
 
+// Alias for backwards compatibility
+const sendPasswordResetEmail = handleForgotPasswordSubmit;
 
 
 function togglePasswordVisibility(inputId, btn) {
@@ -2139,8 +2251,8 @@ async function sendSupabaseOtp(email) {
   }
 }
 
-function openOtpModal(email, type = 'login', username = '') {
-  AppState.pendingOtp = { email, type, username };
+function openOtpModal(email, type = 'login', username = '', password = '') {
+  AppState.pendingOtp = { email, type, username, password };
   
   const modal = document.getElementById('otp-verification-modal');
   const emailDisplay = document.getElementById('otp-target-email-display');
@@ -2342,18 +2454,39 @@ async function submitOtpVerification() {
     closeOtpModal();
 
     if (pending.type === 'register') {
-      // REQUIREMENT: Once registered & verified, DO NOT auto-login!
+      // 1. Permanently register this admin account with verified password
+      saveRegisteredAdmin({
+        username: pending.username,
+        email: pending.email,
+        password: pending.password,
+        role: 'Teacher Admin',
+        verifiedAt: new Date().toISOString()
+      });
+
+      // 2. REQUIREMENT: Once registered & verified, DO NOT auto-login!
       // Switch BACK TO LOGIN so they log in with their verified credentials!
       showToast('🎉 Admin account verified successfully! Please log in with your credentials.', 'success');
       
-      // Pre-fill email in login forms for convenience
+      // 3. Pre-fill email in login forms
       const deskLoginEmail = document.getElementById('desk-login-email');
       const phoneLoginEmail = document.getElementById('phone-login-email');
       if (deskLoginEmail) deskLoginEmail.value = pending.email;
       if (phoneLoginEmail) phoneLoginEmail.value = pending.email;
 
+      // 4. CLEAR password inputs so NO wrong/stale password is automatically present!
+      const deskLoginPass = document.getElementById('desk-login-pass');
+      const phoneLoginPass = document.getElementById('phone-login-pass');
+      if (deskLoginPass) { deskLoginPass.value = ''; deskLoginPass.classList.remove('input-error'); }
+      if (phoneLoginPass) { phoneLoginPass.value = ''; phoneLoginPass.classList.remove('input-error'); }
+
       setAuthMode('login');
       AppState.pendingOtp = null;
+
+      // Focus on password input
+      setTimeout(() => {
+        const pInp = (window.innerWidth <= 840) ? phoneLoginPass : deskLoginPass;
+        if (pInp) pInp.focus();
+      }, 150);
     } else {
       // Login verified: enter portal!
       const usernameVal = pending.username || (pending.email.includes('@') ? pending.email.split('@')[0] : pending.email);

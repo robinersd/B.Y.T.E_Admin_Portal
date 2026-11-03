@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>B.Y.T.E. Admin Portal</title>
-  <link rel="stylesheet" href="css/style.css?v=20261103_v250">
+  <link rel="stylesheet" href="css/style.css?v=20261103_v260">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -43,7 +43,7 @@
                 <span class="input-icon">
                   <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </span>
-                <input type="email" id="desk-login-email" placeholder="Enter your email" value="teacher@school.edu.ph" required>
+                <input type="email" id="desk-login-email" placeholder="Enter your email" required>
               </div>
             </div>
 
@@ -53,7 +53,7 @@
                 <span class="input-icon">
                   <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </span>
-                <input type="password" id="desk-login-pass" placeholder="Enter your password" value="password123" required>
+                <input type="password" id="desk-login-pass" placeholder="Enter your password" required>
                 <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('desk-login-pass', this)" title="Show/Hide Password">
                   <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                 </button>
@@ -170,7 +170,7 @@
               <span class="input-icon">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
               </span>
-              <input type="email" id="phone-login-email" placeholder="Enter your email" value="teacher@school.edu.ph" required>
+              <input type="email" id="phone-login-email" placeholder="Enter your email" required>
             </div>
           </div>
 
@@ -180,7 +180,7 @@
               <span class="input-icon">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
               </span>
-              <input type="password" id="phone-login-pass" placeholder="Enter your password" value="password123" required>
+              <input type="password" id="phone-login-pass" placeholder="Enter your password" required>
               <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('phone-login-pass', this)">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
               </button>
@@ -585,32 +585,36 @@ print("Ammo remaining:", sheriff.ammo)</textarea>
     </div>
   </div>
 
-  <!-- Modal: Forgot Password -->
+    <!-- Modal: Forgot Password (White Theme matching Auth & OTP) -->
   <div id="forgot-password-modal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 style="color:#ffffff;">🔑 Account Recovery</h3>
-        <button class="modal-close-btn" onclick="closeForgotPasswordModal()">&times;</button>
+    <div class="modal-card white-mode-modal" style="max-width: 460px; width: 90%; background: #ffffff !important; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid #e2e8f0;">
+      <div class="modal-header" style="justify-content: space-between; position: relative; border-bottom: 1px solid #f1f5f9; padding: 18px 22px; background: #ffffff !important;">
+        <h3 style="color:#0f172a !important; display:flex; align-items:center; gap:8px; margin:0; font-size:18px; font-weight:800;">
+          <span>🔑</span> Account Recovery
+        </h3>
+        <button class="modal-close-btn" onclick="closeForgotPasswordModal()" style="background: #f1f5f9 !important; color: #64748b !important; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: all 0.2s;">&times;</button>
       </div>
-      <div class="modal-body">
-        <p style="color:#ffffff; font-size:14px; margin-bottom:16px;">
-          Enter the registered admin email to receive a password reset link or contact the system administrator.
+      <div class="modal-body" style="padding: 22px; background: #ffffff !important;">
+        <p style="color:#64748b !important; font-size:13.5px; line-height:1.5; margin:0 0 18px;">
+          Enter your registered admin email address to receive password reset instructions.
         </p>
-        <div class="form-group">
-          <label style="color:#ffffff;">Email Address</label>
-          <div class="input-with-icon">
-            <span class="input-icon">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="color:#0f172a !important; font-size:13px; font-weight:700; margin-bottom:6px; display:block;">Registered Email Address</label>
+          <div class="input-with-icon" style="position:relative;">
+            <span class="input-icon" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#64748b; display:flex; align-items:center;">
               <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
             </span>
-            <input type="email" id="forgot-email" placeholder="admin@school.edu.ph" value="teacher@school.edu.ph">
+            <input type="email" id="forgot-email" placeholder="admin@school.edu.ph" style="width:100%; height:44px; background:#f8fafc !important; color:#0f172a !important; border:1.5px solid #cbd5e1 !important; border-radius:10px; padding:0 14px 0 42px; font-size:14px; outline:none; box-sizing:border-box;">
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-primary-blue" style="width:auto; padding:0 24px;" onclick="handleForgotPasswordSubmit()">Send Instructions</button>
+      <div class="modal-footer" style="background:#ffffff !important; border-top:1px solid #f1f5f9; padding:14px 22px; display:flex; justify-content:flex-end; gap:10px; border-bottom-left-radius:20px; border-bottom-right-radius:20px;">
+        <button type="button" onclick="closeForgotPasswordModal()" style="background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; border-radius:10px; padding:0 16px; height:42px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+        <button id="btn-forgot-submit" class="btn-primary-blue" style="width:auto; padding:0 24px; height:42px; font-size:13px; font-weight:700; border-radius:10px;" onclick="handleForgotPasswordSubmit(this)">Send Instructions</button>
       </div>
     </div>
   </div>
+
 
     <!-- Modal: Admin Bug Report (Saves directly to Database) -->
   <div id="bug-report-modal" class="modal-overlay hidden">
@@ -738,6 +742,6 @@ print("Ammo remaining:", sheriff.ammo)</textarea>
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Main Application Logic -->
-  <script src="js/app.js?v=20261103_v250"></script>
+  <script src="js/app.js?v=20261103_v260"></script>
 </body>
 </html>
