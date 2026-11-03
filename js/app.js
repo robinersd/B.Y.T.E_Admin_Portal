@@ -29,14 +29,130 @@ function getRegisteredAdmins() {
   ];
 }
 
-function clearRegistrationInputs() {
-  const ids = [
-    'desk-reg-user', 'desk-reg-email', 'desk-reg-pass', 'desk-reg-cpass',
-    'phone-reg-user', 'phone-reg-email', 'phone-reg-pass', 'phone-reg-cpass'
+function clearAllAuthInputs(options = { clearLogin: true, clearReg: true }) {
+  if (options.clearReg) {
+    const regIds = [
+      'desk-reg-user', 'desk-reg-email', 'desk-reg-pass', 'desk-reg-cpass',
+      'phone-reg-user', 'phone-reg-email', 'phone-reg-pass', 'phone-reg-cpass'
+    ];
+    regIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.value = '';
+        el.classList.remove('input-error');
+      }
+    });
+  }
+
+  if (options.clearLogin) {
+    const loginIds = [
+      'desk-login-email', 'desk-login-pass',
+      'phone-login-email', 'phone-login-pass'
+    ];
+    loginIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.value = '';
+        el.classList.remove('input-error');
+      }
+    });
+
+    const deskRem = document.getElementById('desk-remember');
+    if (deskRem) deskRem.checked = false;
+    const phoneRem = document.getElementById('phone-remember');
+    if (phoneRem) phoneRem.checked = false;
+  }
+
+  // Reset password toggles back to hidden password mode
+  const allPassIds = [
+    'desk-login-pass', 'phone-login-pass',
+    'desk-reg-pass', 'desk-reg-cpass',
+    'phone-reg-pass', 'phone-reg-cpass'
   ];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
+  allPassIds.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.type = 'password';
+      const btn = input.nextElementSibling;
+      if (btn && btn.classList.contains('password-toggle-btn')) {
+        btn.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+      }
+    }
+  });
+}
+
+function clearRegistrationInputs() {
+  clearAllAuthInputs({ clearLogin: false, clearReg: true });
+}
+
+function recordQuestionForUser(userKey, questionId) {
+  if (!userKey || !questionId) return;
+  const key = 'byte_user_q_ids_' + String(userKey).toLowerCase().trim();
+  try {
+    let list = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!Array.isArray(list)) list = [];
+    if (!list.includes(questionId)) {
+      list.unshift(questionId);
+      localStorage.setItem(key, JSON.stringify(list));
+    }
+  } catch (e) {
+    console.warn('Error recording user question ID:', e);
+  }
+}
+
+function unrecordQuestionForUser(userKey, questionId) {
+  if (!userKey || !questionId) return;
+  const key = 'byte_user_q_ids_' + String(userKey).toLowerCase().trim();
+  try {
+    let list = JSON.parse(localStorage.getItem(key) || '[]');
+    if (Array.isArray(list)) {
+      list = list.filter(id => id !== questionId);
+      localStorage.setItem(key, JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+function getMyQuestions() {
+  if (!AppState.currentUser) return [];
+  const email = (AppState.currentUser.email || '').trim().toLowerCase();
+  const username = (AppState.currentUser.username || '').trim().toLowerCase();
+
+  let userQIds = [];
+  try {
+    if (email) {
+      const stored = localStorage.getItem('byte_user_q_ids_' + email);
+      if (stored) userQIds.push(...JSON.parse(stored));
+    }
+    if (username && username !== email) {
+      const storedU = localStorage.getItem('byte_user_q_ids_' + username);
+      if (storedU) userQIds.push(...JSON.parse(storedU));
+    }
+  } catch (e) {
+    console.warn('Error reading stored user question IDs:', e);
+  }
+
+  return (AppState.questionsList || []).filter(q => {
+    // 1. Direct ID match from questions deployed under this teacher
+    if (q.id && userQIds.includes(q.id)) return true;
+
+    // 2. Author or creator explicitly matches current user
+    const qAuthor = (q.author || q.creator || '').trim().toLowerCase();
+    if (qAuthor && (qAuthor === email || qAuthor === username)) return true;
+
+    // 3. Topic column matches current user (saved to Supabase topic field)
+    const qTopic = (q.topic || '').trim().toLowerCase();
+    if (qTopic && (qTopic === email || qTopic === username)) return true;
+
+    // 4. Code comment check (# CREATOR: <email> or # AUTHOR: <email>)
+    if (q.code && typeof q.code === 'string') {
+      const match = q.code.match(/#\s*(?:CREATOR|AUTHOR):\s*([^\r\n]+)/i);
+      if (match && match[1]) {
+        const creator = match[1].trim().toLowerCase();
+        if (creator === email || creator === username) return true;
+      }
+    }
+
+    return false;
   });
 }
 
@@ -657,31 +773,33 @@ async function fetchFromSupabase() {
 
       if (records && records.length > 0) {
 
-        AppState.questionsList = records.map(r => ({
-
-          id: r.id,
-
-          title: r.question || r.title || 'Untitled Problem',
-
-          question: r.question || r.title || 'Untitled Problem',
-
-          difficulty: r.difficulty || 'Easy',
-
-          level: r.difficulty || 'Easy',
-
-          year: r.year || '1st Year',
-
-          code: r.code || '',
-
-          expectedOutput: r.expectedOutput || '',
-
-          hint: r.hint || '',
-
-          created_at: r.created_at,
-
-          status: r.status || 'deployed'
-
-        }));
+        AppState.questionsList = records.map(r => {
+          let author = '';
+          if (r.topic && (r.topic.includes('@') || r.topic.length > 2)) {
+            author = r.topic;
+          }
+          if (!author && r.code) {
+            const match = r.code.match(/#\s*(?:CREATOR|AUTHOR):\s*([^\r\n]+)/i);
+            if (match && match[1]) {
+              author = match[1].trim();
+            }
+          }
+          return {
+            id: r.id,
+            title: r.question || r.title || 'Untitled Problem',
+            question: r.question || r.title || 'Untitled Problem',
+            difficulty: r.difficulty || 'Easy',
+            level: r.difficulty || 'Easy',
+            year: r.year || '1st Year',
+            topic: r.topic || '',
+            author: author,
+            code: r.code || '',
+            expectedOutput: r.expectedOutput || '',
+            hint: r.hint || '',
+            created_at: r.created_at,
+            status: r.status || 'deployed'
+          };
+        });
 
         saveQuestions();
 
@@ -897,21 +1015,17 @@ function useOutputAsExpected() {
 // ==========================================================
 
 function setAuthMode(mode) {
-
   AppState.authMode = mode;
-
   const isReg = mode === 'register';
 
-  
-
   document.getElementById('desktop-login-form')?.classList.toggle('hidden', isReg);
-
   document.getElementById('desktop-register-form')?.classList.toggle('hidden', !isReg);
-
   document.getElementById('phone-login-form')?.classList.toggle('hidden', isReg);
-
   document.getElementById('phone-register-form')?.classList.toggle('hidden', !isReg);
 
+  if (isReg) {
+    clearRegistrationInputs();
+  }
 }
 
 
@@ -1059,7 +1173,8 @@ function handleLogout() {
   AppState.currentUser = null;
   sessionStorage.removeItem('byte_admin_user');
   localStorage.removeItem('byte_admin_user');
-  clearRegistrationInputs();
+  clearAllAuthInputs({ clearLogin: true, clearReg: true });
+  closeProfileModal();
   showToast('Logged out successfully', 'success');
   showAuthView();
 }
@@ -1383,13 +1498,22 @@ async function saveAndDeployQuestion() {
 
   
 
-  // Primary column is 'question' as requested ("palitan mo ang title name wag text gawin mong question")
-  // and 'topic' is removed ("yung table na topic sa supabase tanggalin muna yun")
+  const currentUser = AppState.currentUser;
+  const userEmail = (currentUser?.email || '').trim().toLowerCase();
+  const username = (currentUser?.username || '').trim().toLowerCase();
+  const authorTag = userEmail || username || 'admin';
+
+  let codeToSave = code;
+  if (!codeToSave.includes('# CREATOR:')) {
+    codeToSave = `# CREATOR: ${authorTag}\n` + codeToSave;
+  }
+
   const payload = {
     question: title,
     difficulty: AppState.currentQuestion.level,
     year: AppState.currentQuestion.year,
-    code: code,
+    topic: authorTag,
+    code: codeToSave,
     expectedOutput: expected.trim(),
     hint: hint.trim(),
     status: 'deployed'
@@ -1484,16 +1608,16 @@ async function saveAndDeployQuestion() {
 
 
 
+  if (userEmail) recordQuestionForUser(userEmail, recordId);
+  if (username && username !== userEmail) recordQuestionForUser(username, recordId);
+
   const savedItem = {
-
     ...payload,
-
     id: recordId,
-
     level: payload.difficulty,
-
+    author: authorTag,
+    topic: authorTag,
     created_at: new Date().toISOString()
-
   };
 
 
@@ -1635,85 +1759,58 @@ function scrollToQuestionBank() {
 
 
 function updateProfileUI() {
-
   if (AppState.currentUser) {
-
     const profName = document.getElementById('prof-name');
-
     const profEmail = document.getElementById('prof-email');
-
     const profTotal = document.getElementById('prof-total-q');
-
     const settingsQCount = document.getElementById('settings-q-count');
 
-    
-
     if (profName) profName.innerText = AppState.currentUser.username || 'Teacher Admin';
-
     if (profEmail) profEmail.innerText = AppState.currentUser.email || 'teacher@school.edu.ph';
 
-    if (profTotal) profTotal.innerText = AppState.questionsList.length;
-
-    if (settingsQCount) settingsQCount.innerText = AppState.questionsList.length;
-
+    const myQuestions = getMyQuestions();
+    if (profTotal) profTotal.innerText = myQuestions.length;
+    if (settingsQCount) settingsQCount.innerText = myQuestions.length;
   }
-
 }
 
 
 
 function updateHistoryTable() {
-
   const tbody = document.getElementById('history-table-body');
-
   if (!tbody) return;
-
   tbody.innerHTML = '';
 
-  
-
-  if (AppState.questionsList.length === 0) {
-
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ffffff;">No questions created yet.</td></tr>';
-
+  const myQuestions = getMyQuestions();
+  if (myQuestions.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align:center; padding:32px 16px; color:#94a3b8;">
+          <div style="font-size:26px; margin-bottom:6px;">📋</div>
+          <strong style="color:#ffffff; font-size:14px; display:block; margin-bottom:4px;">No problem questions created yet.</strong>
+          <span style="font-size:12px; color:#64748b;">Questions you create and deploy under this account will appear here.</span>
+        </td>
+      </tr>
+    `;
     return;
-
   }
 
-  
-
-  AppState.questionsList.forEach((q, idx) => {
-
+  myQuestions.forEach((q, idx) => {
     const tr = document.createElement('tr');
-
     const diffText = `${escapeHTML(q.difficulty || q.level || 'Easy')} • ${escapeHTML(q.year || '1st Year')}`;
-
     tr.innerHTML = `
-
       <td><strong style="color:#ffffff;">${escapeHTML(q.title || 'Question #' + (idx + 1))}</strong></td>
-
       <td><span class="badge-difficulty-white">${diffText}</span></td>
-
       <td style="white-space:nowrap;"><code class="history-code-pill">${escapeHTML(q.expectedOutput || '')}</code></td>
-
       <td style="white-space:nowrap;">
-
         <div class="table-actions-group">
-
           <button class="btn-table-edit" onclick="loadQuestionToEditor('${q.id}')">Edit</button>
-
           <button class="btn-table-del" onclick="deleteQuestion('${q.id}', this)" title="Delete question">Delete</button>
-
         </div>
-
       </td>
-
     `;
-
     tbody.appendChild(tr);
-
   });
-
 }
 
 
@@ -1802,6 +1899,12 @@ async function deleteQuestion(id, btn = null) {
   
 
   AppState.questionsList = AppState.questionsList.filter(item => item.id !== id);
+  if (AppState.currentUser) {
+    const email = (AppState.currentUser.email || '').trim().toLowerCase();
+    const username = (AppState.currentUser.username || '').trim().toLowerCase();
+    unrecordQuestionForUser(email, id);
+    unrecordQuestionForUser(username, id);
+  }
 
   saveQuestions();
 
